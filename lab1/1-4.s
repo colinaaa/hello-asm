@@ -1,7 +1,7 @@
 .text
-.globl main
+.globl _start
 
-main:
+_start:
 	pushl %ebp
 	movl  %esp, %ebp
 
@@ -51,6 +51,9 @@ main_loop:
 error:
 	addl $0x8, %esp
 	leave
+	mov  $1, %eax
+	mov  $0, %ebx
+	int  $0x80
 	ret
 
 # void display_good(char* buf)

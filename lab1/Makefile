@@ -1,5 +1,5 @@
 CC=gcc
-CCFLAG=-Og -ggdb3 -m32 -Wall -no-pie
+CCFLAG=-Og -ggdb3 -m32 -Wall -no-pie -nostdlib
 
 SRC=$(wildcard *.s)
 all: $(addprefix ,$(SRC:.s=))
@@ -8,5 +8,10 @@ all: $(addprefix ,$(SRC:.s=))
 %: %.s
 	$(CC) $(CCFLAG) -o $@ $<
 
+pf%: %.s
+	./profile.sh $<
+
 clean:
-	find . -maxdepth 1 -type f -executable -delete
+	fd -t x -E "*.sh" -x rm {}
+	fd -e out -e o -e profile -x rm {}
+	fd --regex 'callgrind.out.[0-9].*' -x rm {}
