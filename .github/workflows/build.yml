@@ -24,6 +24,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         cc: [ gcc, clang ]
+        exclude: 
+          - os: windows-latest
+            cc: clang
             
     runs-on: ${{ matrix.os }}
 
@@ -31,13 +34,6 @@ jobs:
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
-    - name: install clang
-      if: runner.os == 'Windows' && matrix.cc == 'clang'
-      run: choco install -y llvm make
-      shell: powershell
-    - name: look up tools
-      if: runner.os == 'Windows' && matrix.cc == 'clang'
-      run: C:\Program Files\LLVM\clang.exe --version
     - name: build
       env:
         CC: ${{ matrix.cc }}
