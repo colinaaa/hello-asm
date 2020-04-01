@@ -20,6 +20,7 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
         cc: [ gcc, clang ]
@@ -35,7 +36,7 @@ jobs:
       run: choco install -y llvm make
       shell: powershell
     - name: look up tools
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows' && matrix.cc == 'clang'
       run: clang --version
     - name: build
       env:
