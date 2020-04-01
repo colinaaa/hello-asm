@@ -32,11 +32,12 @@ jobs:
     - uses: actions/checkout@v2
     - name: install clang
       if: runner.os == 'Windows' && matrix.cc == 'clang'
-      run: choco install -y llvm
+      run: choco install -y llvm make
       shell: powershell
     - name: build
       env:
         CC: ${{ matrix.cc }}
         CI: gh
       run: make
-      shell: bash
+      shell: powershell
+
