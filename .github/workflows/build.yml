@@ -22,10 +22,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        cc: [ gcc, cl, clang ]
-        exclude: 
-          - os: ubuntu-latest
-            cc: cl
+        cc: [ gcc, clang-9 ]
             
     runs-on: ${{ matrix.os }}
 
