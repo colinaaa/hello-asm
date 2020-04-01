@@ -20,6 +20,7 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
         cc: [ gcc, clang ]
@@ -33,16 +34,11 @@ jobs:
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
-    - name: install clang
-      if: runner.os == 'Windows' && matrix.cc == 'clang'
-      run: choco install -y llvm make
-      shell: powershell
     - name: build
       env:
         CC: ${{ matrix.cc }}
         CI: gh
       run: make
-      shell: powershell
     - uses: actions/upload-artifact@v1
       with:
         name: ${{ matrix.os }}-${{ matrix.cc }}-${{ github.run_id }}
