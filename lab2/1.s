@@ -62,6 +62,20 @@ movl $0, %ebx
 	jmp .main_loop
 
 .L8:
+	subl $0x24, %esp
+	movb $0x0a, 0x20(%esp) #  add '\n' to the end
+	movl %esp, %edi
+	movl $0xacde, %esi # i now hard code the converting number
+	movl $0x10, %edx # radix
+	call itoa
+	leal 0x20(%esp, %eax), %edi
+	xorl $-1, %eax # invert eax
+	addl $2, %eax # a = -a + 1(\n)
+	movl %eax, %esi
+	call write_n
+	addl $0x20, %esp
+	jmp  .main_loop
+
 .L9:
 .exit:
 	addl $0x8, %esp
@@ -206,6 +220,34 @@ str_cmp:
 	popl %ebx
 	ret
 
+# int itoa(char* buf, int i, int radix)
+# convert the unsigned int i to ascii by radix
+# return the width of ascii string
+itoa:
+	pushl %ebx
+	movl  %esi, %eax # i
+	movl  %edx, %ecx # radix
+	movl  $0, %esi # count
+	addl  $0x1f, %edi # edi points to the last byte of buf
+
+.itoa_loop:
+	xorl %edx, %edx
+	div  %ecx
+	movl %edx, %ebx
+	orl  %eax, %edx
+	test %edx, %edx
+	jz   .itoa_ret
+	movb digit(%ebx), %dl
+	movb %dl, (%edi, %esi)
+	dec  %esi
+	cmp  $-0x20, %esi
+	jnz  .itoa_loop
+
+.itoa_ret:
+	movl %esi, %eax
+	popl %ebx
+	ret
+
 # int write_n(char* buf, int n)
 # write n bytes to stdout
 # return the number of bytes writen
@@ -305,8 +347,15 @@ usage:
 
 	.equ usage_len, . - usage
 
+digit:
+	.ascii "0123456789abcdef"
+	.align 4
+
 # data section
 .data
+
+itoa_output:
+	.asciz "00000000000000000000000000000000"
 
 auth:
 	.byte  0
