@@ -34,6 +34,9 @@ jobs:
       if: runner.os == 'Windows' && matrix.cc == 'clang'
       run: choco install -y llvm make
       shell: powershell
+    - name: look up tools
+      if: runner.os == 'Windows'
+      run: clang --version
     - name: build
       env:
         CC: ${{ matrix.cc }}
