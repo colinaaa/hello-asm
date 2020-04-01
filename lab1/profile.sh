@@ -1,5 +1,5 @@
 #!/bin/bash
-CCFLAG="-O2 -Wa,--gstabs -save-temps -ggdb -nostdlib -m32 -no-pie"
+CCFLAG="-O2 -ggdb3 -nostdlib -m32 -no-pie"
 
 echo "Deal with source file: $1"
 src=""${1%%.*}""
@@ -15,3 +15,5 @@ valgrind --tool=callgrind --dump-instr=yes --collect-jumps=yes --collect-systime
 fd --regex "callgrind.out.[0-9]+" | callgrind_annotate --auto=yes > $src.profile
 
 echo "Profile result writes to $src.profile! Check it out."
+
+less $src.profile
