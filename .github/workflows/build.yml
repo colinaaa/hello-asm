@@ -37,7 +37,7 @@ jobs:
       shell: powershell
     - name: look up tools
       if: runner.os == 'Windows' && matrix.cc == 'clang'
-      run: clang --version
+      run: C:\Program Files\LLVM\clang.exe --version
     - name: build
       env:
         CC: ${{ matrix.cc }}
