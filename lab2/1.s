@@ -15,17 +15,17 @@ main_loop:
 	movb 4(%esp), %al # now input is in 4(%esp)
 	subb $0x31, %al # since '1' == 0x31
 	cmpb $8, %al # compare choice:8 (good value [0, 8])
-	ja   error # this is little tricky, both minus and above 8 will jump(from CS:APP)
+	ja   exit # this is little tricky, both minus and above 8 will jump(from CS:APP)
 	jmp  *jump_table(, %eax, 4)
 
 .L1:
 # login
 	call cmp_name
 	test %eax, %eax
-	jz   error
+	jz   login_error
 	call cmp_pass
 	test %eax, %eax
-	jz   error
+	jz   login_error
 	movl $1, auth
 	jmp  main_loop
 
@@ -37,38 +37,98 @@ main_loop:
 	jmp  main_loop
 
 .L3:
-	movl good, %eax
-	test %eax, %eax
-	jz   error
+# addto_chart
+	movl good, %edi
+	test %edi, %edi # if good == 0, means no good was selected
+	jz   not_found_error
+	call addto_chart
+	jmp  main_loop
 
 .L4:
-	movl $13, %eax
-	xorl %ebx, %ebx
-	int  $0x80
-	rdtscp
-	rdtscp
-	rdtscp
-	mov  %eax, %ebx
+# compute_recommendation
+movl $0, %ebx
+
+.L4_loop:
+	leal ga1(, %ebx, 8), %edi
+	call compute_rec
+	addl $3, %ebx
+	cmp  $((N-1) * 3), %ebx
+	jnz  .L4_loop
+	jmp  main_loop
 
 .L5:
 .L6:
 .L7:
+	jmp main_loop
+
 .L8:
 .L9:
 
-error:
+exit:
 	addl $0x8, %esp
 	leave
-	mov  $1, %eax
+	mov  $1, %eax # exit
 	mov  $0, %ebx
-	int  $0x80
+	int  $0x80 # exit(0)
+
+login_error:
+	movl $err_login, %edi
+	movl $err_login_len, %esi
+	call write_n
+	jmp  main_loop
+
+not_found_error:
+	movl $err_not_found, %edi
+	movl $err_not_found_len, %esi
+	call write_n
+	jmp  main_loop
+
+# void compute_rec(void* good)
+# compute the recommendation of good
+compute_rec:
+	movl   $0, %edx
+	movsbw 10(%edi), %ax # discount
+	movw   13(%edi), %si # sell_price
+	imulw  %ax, %si # 10 * real_price in %esi
+	movswl 11(%edi), %eax # in price
+	imull  $10, %eax # 10 * in price in %edx:%eax
+
+#shll $1, %eax # ax = 2*ax
+#leal (%eax, %eax, 4), %eax # ax = 5*ax
+shll  $7, %eax
+idivl %esi # div res in %eax
+movl  %eax, %ecx
+
+	movswl 15(%edi), %esi # in number
+	shll   $1, %esi # esi *= 2
+	movswl 17(%edi), %eax # out number
+	shll   $7, %eax
+	movl   $0, %edx
+	idiv   %esi # div res in %eax
+	addl   %ecx, %eax
+	movw   %ax, 19(%edi)
+	ret
+
+# void addto_chart(void* good)
+addto_chart:
+	movw 17(%edi), %ax # out_number
+	cmp  15(%edi), %ax
+	jl   addto_chart_add # if out is less than in
+	movl $err_good_empty, %edi
+	movl $err_good_empty_len, %esi
+	call write_n
+	ret
+
+addto_chart_add:
+	inc  %ax
+	movw %ax, 17(%edi)
 	ret
 
 # void display_good(char* buf)
 display_good:
 	ret
 
-# void lookup_good()
+# int lookup_good()
 lookup_good:
 	subl $0x20, %esp
 	leal 10(%esp), %edi
@@ -87,8 +147,14 @@ lookup_loop:
 	jz   lookup_loop
 	leal ga1(, %edx, 8), %eax
 	movl %eax, good
+	jmp  lookup_ret
 
 notfound:
+	movl $err_not_found, %edi
+	movl $err_not_found_len, %esi
+	call write_n
+
+lookup_ret:
 	addl $0x20, %esp
 	ret
 
@@ -128,17 +194,33 @@ str_cmp:
 str_cmp_loop:
 	movb (%eax, %edi), %cl
 	cmpb %cl, (%eax, %esi)
-	jnz  res_nequal
+	jnz  cmp_res_nequal
 	inc  %eax
 	cmpl %edx, %eax
 	jnz  str_cmp_loop
-	jmp  res_equal
+	jmp  cmp_res_equal
 
-res_nequal:
+cmp_res_nequal:
 	movl $0, %eax
 
-res_equal:
+cmp_res_equal:
 	popl %ebx
+	ret
+
+# int write_n(char* buf, int n)
+# write n bytes to stdout
+# return the number of bytes writen
+write_n:
+	pushl %ebp
+	movl  %esp, %ebp
+	pushl %ebx
+	movl  $4, %eax
+	movl  $1, %ebx # stdout
+	movl  %edi, %ecx # buf
+	movl  %esi, %edx # n
+	int   $0x80 # syscall
+	popl  %ebx
+	leave
 	ret
 
 # int read_n(char* buf, int n)
@@ -161,19 +243,15 @@ read_n:
 
 # void print_usage()
 print_usage:
-	pushl %ebp
-	movl  %esp, %ebp
-	pushl %ebx # callee reserved
+	movl $usage, %edi
+	movl $usage_len, %esi
+	call write_n
+	ret
 
-# see CS:APP 2e
-# write(stdout, &usage, length)
-	movl $4, %eax # write is syscall No.4
-	movl $1, %ebx # stdout
-	movl $usage, %ecx
-	movl $usage_len, %edx # length
-	int  $0x80
-	popl %ebx
-	leave
+# int64_t get_time()
+# return ns since startup, first 32 bits in %edx, last 32 bits in %eax
+get_time:
+	rdtscp
 	ret
 
 # read only section
@@ -201,6 +279,18 @@ boss_pass:
 
 shop_name:
 	.asciz "shop"
+
+err_not_found:
+	.asciz "商品未找到\n"
+	.equ   err_not_found_len, . - err_not_found
+
+err_login:
+	.asciz "用户名或密码错误\n"
+	.equ   err_login_len, . - err_login
+
+err_good_empty:
+	.asciz "商品已售空\n"
+	.equ   err_good_empty_len, . - err_good_empty
 
 usage:
 	.ascii "请输入数字1-9选择功能\n"
@@ -234,8 +324,12 @@ good:
 ga1:
 	.asciz "PEN"
 	.zero  6
-	.byte  10
-	.word  35, 56, 70, 25, 0
+	.byte  10 # discount (+10)
+	.word  35 # in_price (+11)
+	.word  56 # sell_price (+13)
+	.word  70 # in_number (+15)
+	.word  25 # out_number (+17)
+	.word  0  # recommandation (+19)
 	.align 4
 
 ga2:
@@ -252,6 +346,3 @@ gan:
 	.word  15, 20, 30, 2, 0
 	.align 4
 	.endr
-
-time:
-	.long 0
