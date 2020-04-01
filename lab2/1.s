@@ -5,7 +5,7 @@ _start:
 	pushl %ebp
 	movl  %esp, %ebp
 
-main_loop:
+.main_loop:
 	call print_usage
 	subl $8, %esp # allocate buf on stack
 	leal 4(%esp), %edi
@@ -15,34 +15,34 @@ main_loop:
 	movb 4(%esp), %al # now input is in 4(%esp)
 	subb $0x31, %al # since '1' == 0x31
 	cmpb $8, %al # compare choice:8 (good value [0, 8])
-	ja   exit # this is little tricky, both minus and above 8 will jump(from CS:APP)
+	ja   .exit # this is little tricky, both minus and above 8 will jump(from CS:APP)
 	jmp  *jump_table(, %eax, 4)
 
 .L1:
 # login
 	call cmp_name
 	test %eax, %eax
-	jz   login_error
+	jz   .login_error
 	call cmp_pass
 	test %eax, %eax
-	jz   login_error
+	jz   .login_error
 	movl $1, auth
-	jmp  main_loop
+	jmp  .main_loop
 
 .L2:
 # lookup goods
 	call lookup_good
 	movl good, %eax
 	call display_good
-	jmp  main_loop
+	jmp  .main_loop
 
 .L3:
 # addto_chart
 	movl good, %edi
 	test %edi, %edi # if good == 0, means no good was selected
-	jz   not_found_error
+	jz   .not_found_error
 	call addto_chart
-	jmp  main_loop
+	jmp  .main_loop
 
 .L4:
 # compute_recommendation
@@ -54,34 +54,33 @@ movl $0, %ebx
 	addl $3, %ebx
 	cmp  $((N-1) * 3), %ebx
 	jnz  .L4_loop
-	jmp  main_loop
+	jmp  .main_loop
 
 .L5:
 .L6:
 .L7:
-	jmp main_loop
+	jmp .main_loop
 
 .L8:
 .L9:
-
-exit:
+.exit:
 	addl $0x8, %esp
 	leave
-	mov  $1, %eax # exit
+	mov  $1, %eax # .exit
 	mov  $0, %ebx
 	int  $0x80 # exit(0)
 
-login_error:
+.login_error:
 	movl $err_login, %edi
 	movl $err_login_len, %esi
 	call write_n
-	jmp  main_loop
+	jmp  .main_loop
 
-not_found_error:
+.not_found_error:
 	movl $err_not_found, %edi
 	movl $err_not_found_len, %esi
 	call write_n
-	jmp  main_loop
+	jmp  .main_loop
 
 # void compute_rec(void* good)
 # compute the recommendation of good
@@ -113,13 +112,13 @@ movl  %eax, %ecx
 addto_chart:
 	movw 17(%edi), %ax # out_number
 	cmp  15(%edi), %ax
-	jl   addto_chart_add # if out is less than in
+	jl   .addto_chart_add # if out is less than in
 	movl $err_good_empty, %edi
 	movl $err_good_empty_len, %esi
 	call write_n
 	ret
 
-addto_chart_add:
+.addto_chart_add:
 	inc  %ax
 	movw %ax, 17(%edi)
 	ret
@@ -136,25 +135,25 @@ lookup_good:
 	call read_n
 	movl $-3, %edx # loop index i
 
-lookup_loop:
+.lookup_loop:
 	add  $3, %edx
 	cmpl $7, %edx  # valid value 0, 3, 6
-	ja   notfound
+	ja   .notfound
 	leal 10(%esp), %edi
 	leal ga1(, %edx, 8), %esi
 	call str_cmp
 	test %eax, %eax
-	jz   lookup_loop
+	jz   .lookup_loop
 	leal ga1(, %edx, 8), %eax
 	movl %eax, good
-	jmp  lookup_ret
+	jmp  .lookup_ret
 
-notfound:
+.notfound:
 	movl $err_not_found, %edi
 	movl $err_not_found_len, %esi
 	call write_n
 
-lookup_ret:
+.lookup_ret:
 	addl $0x20, %esp
 	ret
 
@@ -191,19 +190,19 @@ str_cmp:
 	pushl %ebx
 	movl  $0, %eax
 
-str_cmp_loop:
+.str_cmp_loop:
 	movb (%eax, %edi), %cl
 	cmpb %cl, (%eax, %esi)
-	jnz  cmp_res_nequal
+	jnz  .cmp_res_nequal
 	inc  %eax
 	cmpl %edx, %eax
-	jnz  str_cmp_loop
-	jmp  cmp_res_equal
+	jnz  .str_cmp_loop
+	jmp  .cmp_res_equal
 
-cmp_res_nequal:
+.cmp_res_nequal:
 	movl $0, %eax
 
-cmp_res_equal:
+.cmp_res_equal:
 	popl %ebx
 	ret
 
