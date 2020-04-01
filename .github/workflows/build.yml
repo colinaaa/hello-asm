@@ -44,4 +44,13 @@ jobs:
       with:
         name: ${{ matrix.os }}-${{ matrix.cc }}-${{ github.run_id }}
         path: .
-
+    - uses: actions/download-artifact@v1
+      with:
+        name: ${{ matrix.os }}-${{ matrix.cc }}-${{ github.run_id }}
+    - name: Upload to release
+      if: github.event == 'release' && success()
+      uses: JasonEtco/upload-to-release@master
+      with:
+        args: ${{ matrix.os }}-${{ matrix.cc }}-${{ github.run_id }}
+      env:
+       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
