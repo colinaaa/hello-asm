@@ -37,11 +37,11 @@ _start:
 	jmp  .main_loop
 
 .L3:
-# addto_chart
+# addto_cart
 	movl good, %edi
 	test %edi, %edi # if good == 0, means no good was selected
 	jz   .not_found_error
-	call addto_chart
+	call addto_cart
 	jmp  .main_loop
 
 .L4:
@@ -108,17 +108,17 @@ movl  %eax, %ecx
 	movw   %ax, 19(%edi)
 	ret
 
-# void addto_chart(void* good)
-addto_chart:
+# void addto_cart(void* good)
+addto_cart:
 	movw 17(%edi), %ax # out_number
 	cmp  15(%edi), %ax
-	jl   .addto_chart_add # if out is less than in
+	jl   .addto_cart_add # if out is less than in
 	movl $err_good_empty, %edi
 	movl $err_good_empty_len, %esi
 	call write_n
 	ret
 
-.addto_chart_add:
+.addto_cart_add:
 	inc  %ax
 	movw %ax, 17(%edi)
 	ret
