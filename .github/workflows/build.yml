@@ -22,7 +22,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        cc: [ gcc, clang-9 ]
+        cc: [ gcc, clang ]
             
     runs-on: ${{ matrix.os }}
 
@@ -30,8 +30,13 @@ jobs:
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
+    - name: install clang
+      if: runner.os == 'Windows' && matrix.cc == 'clang'
+      run: choco install -y llvm
+      shell: powershell
     - name: build
       env:
         CC: ${{ matrix.cc }}
         CI: gh
       run: make
+      shell: bash
