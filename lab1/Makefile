@@ -1,4 +1,3 @@
-CC=gcc
 CCFLAG=-Og -ggdb3 -m32 -Wall -no-pie -nostdlib
 
 SRC=$(wildcard *.s)
