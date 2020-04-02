@@ -1,4 +1,4 @@
-CCFLAG=-Og -ggdb3 -m32 -Wall -nostdlib
+CCFLAG=-Og -ggdb3 -m32 -Wall -nostdlib -e _start
 
 SRC=$(wildcard *.s)
 all: $(addprefix ,$(SRC:.s=))
