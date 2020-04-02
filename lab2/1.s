@@ -38,14 +38,16 @@ _start:
 
 .L3:
 # addto_cart
-	movl good, %edi
-	test %edi, %edi # if good == 0, means no good was selected
-	jz   .not_found_error
-	call addto_cart
-	jmp  .main_loop
+movl good, %edi
+test %edi, %edi # if good == 0, means no good was selected
+jz   .not_found_error
+call addto_cart
+
+# continue to compute recommendation
 
 .L4:
 # compute_recommendation
+call get_time
 movl $0, %ebx
 
 .L4_loop:
@@ -54,6 +56,7 @@ movl $0, %ebx
 	addl $3, %ebx
 	cmp  $((N-1) * 3), %ebx
 	jnz  .L4_loop
+	call print_time
 	jmp  .main_loop
 
 .L5:
@@ -62,18 +65,8 @@ movl $0, %ebx
 	jmp .main_loop
 
 .L8:
-	subl $0x24, %esp
-	movb $0x0a, 0x20(%esp) #  add '\n' to the end
-	movl %esp, %edi
-	movl $0xacde, %esi # i now hard code the converting number
-	movl $0x10, %edx # radix
-	call itoa
-	leal 0x20(%esp, %eax), %edi
-	xorl $-1, %eax # invert eax
-	addl $2, %eax # a = -a + 1(\n)
-	movl %eax, %esi
-	call write_n
-	addl $0x20, %esp
+	movl $.text, %edi
+	call print_int32x
 	jmp  .main_loop
 
 .L9:
@@ -292,7 +285,56 @@ print_usage:
 # int64_t get_time()
 # return ns since startup, first 32 bits in %edx, last 32 bits in %eax
 get_time:
-	rdtscp
+	rdtsc
+	movl %eax, time
+	ret
+
+print_time:
+	movl $msg_time, %edi
+	movl $msg_time_len, %esi
+	call write_n
+	rdtsc
+	movl %eax, %edi
+	subl time, %edi
+	call print_int32
+	ret
+
+# void print_int32(int32_t x)
+# print a 32 bits int by radix 10 with \n
+print_int32:
+	subl $0x24, %esp
+	movb $0x0a, 0x20(%esp) #  add '\n' to the end
+	movl %edi, %esi
+	movl %esp, %edi
+	movl $10, %edx # radix
+	call itoa
+	leal 0x20(%esp, %eax), %edi
+	xorl $-1, %eax # invert eax
+	addl $2, %eax # a = -a + 1(\n)
+	movl %eax, %esi
+	call write_n
+	addl $0x24, %esp
+	ret
+
+# void print_int32(int32_t x)
+# print a 32 bits int by radix 16 with \n
+print_int32x:
+	pushl %edi
+	movl  $hex_prefix, %edi
+	movl  $2, %esi
+	call  write_n
+	popl  %esi
+	subl  $0x24, %esp
+	movb  $0x0a, 0x20(%esp) #  add '\n' to the end
+	movl  %esp, %edi
+	movl  $0x10, %edx # radix
+	call  itoa
+	leal  0x20(%esp, %eax), %edi
+	xorl  $-1, %eax # invert eax
+	addl  $2, %eax # a = -a + 1(\n)
+	movl  %eax, %esi
+	call  write_n
+	addl  $0x24, %esp
 	ret
 
 # read only section
@@ -310,6 +352,13 @@ jump_table:
 	.long .L8
 	.long .L9
 
+msg_time:
+	.asciz "消耗时间(ns)："
+	.equ   msg_time_len, .-msg_time
+
+hex_prefix:
+	.ascii "0x"
+
 boss_name:
 	.asciz "Wang Qing Yu" # asciz puts a 0 byte at the end
 	.equ   name_len, . - boss_name
@@ -322,15 +371,15 @@ shop_name:
 	.asciz "shop"
 
 err_not_found:
-	.asciz "商品未找到\n"
+	.asciz "商品未找到\n\n"
 	.equ   err_not_found_len, . - err_not_found
 
 err_login:
-	.asciz "用户名或密码错误\n"
+	.asciz "用户名或密码错误\n\n"
 	.equ   err_login_len, . - err_login
 
 err_good_empty:
-	.asciz "商品已售空\n"
+	.asciz "商品已售空\n\n"
 	.equ   err_good_empty_len, . - err_good_empty
 
 usage:
@@ -343,7 +392,7 @@ usage:
 	.ascii "6. 修改商品信息\n"
 	.ascii "7. 迁移商品运行环境\n"
 	.ascii "8. 显前代码段首址\n"
-	.asciz "9. 退出\n"
+	.asciz "9. 退出\n\n> "
 
 	.equ usage_len, . - usage
 
@@ -354,15 +403,12 @@ digit:
 # data section
 .data
 
-itoa_output:
-	.asciz "00000000000000000000000000000000"
-
 auth:
 	.byte  0
 	.align 4
 
 # number of goods
-.equ N, 30
+.equ N, 10000
 
 # addr of current good
 good:
@@ -394,3 +440,8 @@ gan:
 	.word  15, 20, 30, 2, 0
 	.align 4
 	.endr
+
+	.align 4
+
+time:
+	.long 0
