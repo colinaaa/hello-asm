@@ -8,7 +8,9 @@ all: $(addprefix ,$(SRC:.s=))
 	$(CC) $(CCFLAG) -o $@ $<
 
 pf%: %.s
+	sed -iNOUSAGE -e "s/call print_usage//g" $<
 	./profile.sh $<
+	mv $<NOUSAGE $<
 
 clean:
 	fd -t x -E "*.sh" -x rm {}

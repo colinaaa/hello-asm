@@ -1,5 +1,5 @@
 #!/bin/bash
-CCFLAG="-O2 -Wa,--gstabs -save-temps -ggdb -nostdlib -m32 -no-pie"
+CCFLAG="-O2 -ggdb -nostdlib -m32 -no-pie"
 
 echo "Deal with source file: $1"
 src=""${1%%.*}""
