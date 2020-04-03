@@ -16,7 +16,8 @@ function do_runtime() {
 }
 
 function do_valgrind() {
-  valgrind --tool=callgrind --dump-instr=yes --collect-jumps=yes --collect-systime=yes ./$src
+  echo "using valgrind to simulate and profile..."
+  valgrind --tool=callgrind --dump-instr=yes --collect-jumps=yes --collect-systime=yes ./$src &>/dev/null
 
   fd --regex "callgrind.out.[0-9]+" | callgrind_annotate --auto=yes >$src.profile
 
