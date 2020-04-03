@@ -1,15 +1,25 @@
 CCFLAG=-Og -ggdb3 -m32 -Wall -nostdlib -e _start
 
 SRC=$(wildcard *.s)
-all: $(addprefix ,$(SRC:.s=))
+EXE=$(SRC:.s=)
+all: $(addprefix ,$(EXE))
+# make runtime at all executable
+rt: $(addprefix runtime, $(EXE))
+# make profile at all executable
+pf: $(addprefix profile, $(EXE))
 
 # run as and ld by CC
 %: %.s
 	$(CC) $(CCFLAG) -o $@ $<
 
-pf%: %.s
+profile%: %.s
 	sed -iNOUSAGE -e "s/call print_usage//g" $<
-	./profile.sh $<
+	./profile.sh $< valgrind
+	mv $<NOUSAGE $<
+
+runtime%: %.s
+	sed -iNOUSAGE -e "s/call print_usage//g" $<
+	./profile.sh $< runtime
 	mv $<NOUSAGE $<
 
 clean:

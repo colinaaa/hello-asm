@@ -5,13 +5,29 @@ echo "Deal with source file: $1"
 src=""${1%%.*}""
 
 echo "Cleaning up aux files..."
-make clean &> /dev/null
+make clean &>/dev/null
 
 echo "Build executable $src with flag $CCFLAG"
 gcc $CCFLAG -o $src $1
 
-valgrind --tool=callgrind --dump-instr=yes --collect-jumps=yes --collect-systime=yes ./$src
+function do_runtime() {
+  echo "running $src with runtime_$1"
+  ./$src <runtime_$1 | grep -o -E '[0-9]+' | perl -nle '$sum += $_ } END { print "$sum(ns)"'
+}
 
-fd --regex "callgrind.out.[0-9]+" | callgrind_annotate --auto=yes > $src.profile
+function do_valgrind() {
+  valgrind --tool=callgrind --dump-instr=yes --collect-jumps=yes --collect-systime=yes ./$src
 
-echo "Profile result writes to $src.profile! Check it out."
+  fd --regex "callgrind.out.[0-9]+" | callgrind_annotate --auto=yes >$src.profile
+
+  less $src.profile
+}
+
+if [[ $2 == "valgrind" ]]; then
+  do_valgrind
+fi
+
+if [[ $2 == "runtime" ]]; then
+  do_runtime 1000
+  do_runtime 10000
+fi

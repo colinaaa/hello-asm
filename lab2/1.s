@@ -353,7 +353,7 @@ jump_table:
 	.long .L9
 
 msg_time:
-	.asciz "消耗时间(ns)："
+	.ascii "消耗时间(ns)："
 	.equ   msg_time_len, .-msg_time
 
 hex_prefix:
