@@ -38,7 +38,7 @@ jobs:
       env:
         CC: ${{ matrix.cc }}
         CI: gh
-      run: make
+      run: make && make rt
     - uses: actions/upload-artifact@v1
       with:
         name: ${{ matrix.os }}-${{ matrix.cc }}-${{ github.run_id }}

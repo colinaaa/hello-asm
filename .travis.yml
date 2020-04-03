@@ -100,3 +100,4 @@ before_install:
 
 script:
   make
+  make rt

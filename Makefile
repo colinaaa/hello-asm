@@ -5,4 +5,7 @@ all: $(SUBDIRS)
 $(SUBDIRS):
 	$(MAKE) -C $@
 
-.PHONY: all $(SUBDIRS)
+rt:
+	$(MAKE) -C lab2 rt
+
+.PHONY: all $(SUBDIRS) rt
