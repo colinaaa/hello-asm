@@ -92,24 +92,18 @@ movl $0, %ebx
 # void compute_rec(void* good)
 # compute the recommendation of good
 compute_rec:
-	movl   $0, %edx
-	movsbw 10(%edi), %ax # discount
-	movw   13(%edi), %si # sell_price
-	imulw  %ax, %si # 10 * real_price in %esi
+	movzbl 10(%edi), %ecx # discount
+	imulw  13(%edi), %cx # sell_price * discount (!!improved a lot)
 	movswl 11(%edi), %eax # in price
-	imull  $10, %eax # 10 * in price in %edx:%eax
-
-#shll $1, %eax # ax = 2*ax
-#leal (%eax, %eax, 4), %eax # ax = 5*ax
-shll  $7, %eax
-idivl %esi # div res in %eax
-movl  %eax, %ecx
-
+	leal   (%eax, %eax, 4), %eax # ax = 5*ax
+	shll   $8, %eax
+	cltd
+	idivl  %ecx # div res in %eax
+	movl   %eax, %ecx
 	movswl 15(%edi), %esi # in number
-	shll   $1, %esi # esi *= 2
 	movswl 17(%edi), %eax # out number
-	shll   $7, %eax
-	movl   $0, %edx
+	shll   $6, %eax
+	cltd
 	idiv   %esi # div res in %eax
 	addl   %ecx, %eax
 	movw   %ax, 19(%edi)
@@ -414,6 +408,8 @@ auth:
 good:
 	.long 0
 
+	.align 8
+
 # padding of good is 24 bytes
 ga1:
 	.asciz "PEN"
@@ -423,7 +419,7 @@ ga1:
 	.word  56 # sell_price (+13)
 	.word  70 # in_number (+15)
 	.word  25 # out_number (+17)
-	.word  0  # recommandation (+19) 102 at begining
+	.word  0  # recommandation (+19)
 	.align 4
 
 ga2:

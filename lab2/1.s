@@ -423,7 +423,7 @@ ga1:
 	.word  56 # sell_price (+13)
 	.word  70 # in_number (+15)
 	.word  25 # out_number (+17)
-	.word  0  # recommandation (+19)
+	.word  0  # recommandation (+19) 102 at begining
 	.align 4
 
 ga2:
